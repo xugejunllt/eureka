@@ -16,67 +16,21 @@
 
 package com.netflix.discovery;
 
-import static com.netflix.discovery.EurekaClientNames.METRIC_REGISTRATION_PREFIX;
-import static com.netflix.discovery.EurekaClientNames.METRIC_REGISTRY_PREFIX;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
-
-import javax.annotation.Nullable;
-import javax.annotation.PreDestroy;
-import javax.inject.Provider;
-import javax.inject.Singleton;
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.SSLContext;
-import javax.ws.rs.core.Response.Status;
-
-import com.netflix.discovery.shared.resolver.EndpointRandomizer;
-import com.netflix.discovery.shared.resolver.ResolverUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
-import com.netflix.appinfo.ApplicationInfoManager;
-import com.netflix.appinfo.HealthCheckCallback;
-import com.netflix.appinfo.HealthCheckCallbackToHandlerBridge;
-import com.netflix.appinfo.HealthCheckHandler;
-import com.netflix.appinfo.InstanceInfo;
+import com.netflix.appinfo.*;
 import com.netflix.appinfo.InstanceInfo.ActionType;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.discovery.endpoint.EndpointUtils;
 import com.netflix.discovery.shared.Application;
 import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.shared.resolver.ClosableResolver;
+import com.netflix.discovery.shared.resolver.EndpointRandomizer;
+import com.netflix.discovery.shared.resolver.ResolverUtils;
 import com.netflix.discovery.shared.resolver.aws.ApplicationsResolver;
-import com.netflix.discovery.shared.transport.EurekaHttpClient;
-import com.netflix.discovery.shared.transport.EurekaHttpClientFactory;
-import com.netflix.discovery.shared.transport.EurekaHttpClients;
-import com.netflix.discovery.shared.transport.EurekaHttpResponse;
-import com.netflix.discovery.shared.transport.EurekaTransportConfig;
-import com.netflix.discovery.shared.transport.TransportClientFactory;
+import com.netflix.discovery.shared.transport.*;
 import com.netflix.discovery.shared.transport.jersey.EurekaJerseyClient;
 import com.netflix.discovery.shared.transport.jersey.Jersey1DiscoveryClientOptionalArgs;
 import com.netflix.discovery.shared.transport.jersey.Jersey1TransportClientFactories;
@@ -86,6 +40,27 @@ import com.netflix.servo.annotations.DataSourceType;
 import com.netflix.servo.monitor.Counter;
 import com.netflix.servo.monitor.Monitors;
 import com.netflix.servo.monitor.Stopwatch;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.annotation.Nullable;
+import javax.annotation.PreDestroy;
+import javax.inject.Provider;
+import javax.inject.Singleton;
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.SSLContext;
+import javax.ws.rs.core.Response.Status;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
+import static com.netflix.discovery.EurekaClientNames.METRIC_REGISTRATION_PREFIX;
+import static com.netflix.discovery.EurekaClientNames.METRIC_REGISTRY_PREFIX;
 
 /**
  * The class that is instrumental for interactions with <tt>Eureka Server</tt>.
@@ -353,11 +328,13 @@ public class DiscoveryClient implements EurekaClient {
         remoteRegionsToFetch = new AtomicReference<String>(clientConfig.fetchRegistryForRemoteRegions());
         remoteRegionsRef = new AtomicReference<>(remoteRegionsToFetch.get() == null ? null : remoteRegionsToFetch.get().split(","));
 
+        //fetchRegistry,是否需要向其他的eureka-server去抓取注册表，一般单个eureka-server设置false，集群需要设置为true
         if (config.shouldFetchRegistry()) {
             this.registryStalenessMonitor = new ThresholdLevelsMetric(this, METRIC_REGISTRY_PREFIX + "lastUpdateSec_", new long[]{15L, 30L, 60L, 120L, 240L, 480L});
         } else {
             this.registryStalenessMonitor = ThresholdLevelsMetric.NO_OP_METRIC;
         }
+
 
         if (config.shouldRegisterWithEureka()) {
             this.heartbeatStalenessMonitor = new ThresholdLevelsMetric(this, METRIC_REGISTRATION_PREFIX + "lastHeartbeatSec_", new long[]{15L, 30L, 60L, 120L, 240L, 480L});
@@ -413,7 +390,7 @@ public class DiscoveryClient implements EurekaClient {
                             .build()
             );  // use direct handoff
 
-            eurekaTransport = new EurekaTransport();
+            eurekaTransport = new EurekaTransport(); //支持底层的eureka-client与eureka-server进行通信的组件
             scheduleServerEndpointTask(eurekaTransport, args);
 
             AzToRegionMapper azToRegionMapper;
@@ -451,7 +428,7 @@ public class DiscoveryClient implements EurekaClient {
         }
 
         // finally, init the schedule tasks (e.g. cluster resolvers, heartbeat, instanceInfo replicator, fetch
-        initScheduledTasks();
+        initScheduledTasks(); //初始化调度任务
 
         try {
             Monitors.registerObject(this);

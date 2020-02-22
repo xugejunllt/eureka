@@ -15,17 +15,17 @@
  */
 package com.netflix.appinfo;
 
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.Map;
-
-import com.netflix.config.ConfigurationManager;
 import com.netflix.config.DynamicPropertyFactory;
 import com.netflix.discovery.CommonConstants;
 import com.netflix.discovery.internal.util.Archaius1Utils;
 import org.apache.commons.configuration.Configuration;
 
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 import static com.netflix.appinfo.PropertyBasedInstanceConfigConstants.*;
+import static com.netflix.config.ConfigurationManager.getConfigInstance;
 
 /**
  * A properties based {@link InstanceInfo} configuration.
@@ -74,7 +74,7 @@ public abstract class PropertiesInstanceConfig extends AbstractInstanceConfig im
                 ? namespace
                 : namespace + ".";
 
-        appGrpNameFromEnv = ConfigurationManager.getConfigInstance()
+        appGrpNameFromEnv = getConfigInstance()
                 .getString(FALLBACK_APP_GROUP_KEY, Values.UNKNOWN_APPLICATION);
 
         this.configInstance = Archaius1Utils.initConfig(CommonConstants.CONFIG_FILE_NAME);

@@ -16,12 +16,11 @@
 
 package com.netflix.eureka;
 
-import java.util.Map;
-import java.util.Set;
+import com.netflix.eureka.aws.AwsBindingStrategy;
 
 import javax.annotation.Nullable;
-
-import com.netflix.eureka.aws.AwsBindingStrategy;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Configuration information required by the eureka server to operate.

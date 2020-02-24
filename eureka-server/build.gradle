@@ -3,6 +3,8 @@ apply plugin: 'war'
 dependencies {
     compile project(':eureka-client')
     compile project(':eureka-core')
+    compile project(':eureka-resources')
+    compile project(':eureka-server-governator')
     runtime 'xerces:xercesImpl:2.4.0'
     compile "com.sun.jersey:jersey-server:$jerseyVersion"
     compile "com.sun.jersey:jersey-servlet:$jerseyVersion"

@@ -17,7 +17,6 @@
 package com.netflix.eureka;
 
 import com.netflix.appinfo.ApplicationInfoManager;
-import com.netflix.discovery.DiscoveryManager;
 import com.netflix.eureka.cluster.PeerEurekaNodes;
 import com.netflix.eureka.registry.PeerAwareInstanceRegistry;
 import com.netflix.eureka.resources.ServerCodecs;
@@ -64,7 +63,7 @@ public class DefaultEurekaServerContext implements EurekaServerContext {
     @Override
     public void initialize() {
         logger.info("Initializing ...");
-        peerEurekaNodes.start();
+        peerEurekaNodes.start(); //启动后台线程，每隔一段时间更新eureka-server集群的信息
         try {
             registry.init(peerEurekaNodes);
         } catch (Exception e) {

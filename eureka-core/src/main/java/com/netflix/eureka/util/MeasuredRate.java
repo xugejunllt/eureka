@@ -15,12 +15,12 @@
  */
 package com.netflix.eureka.util;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.atomic.AtomicLong;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Utility class for getting a count in last X milliseconds.
@@ -54,6 +54,7 @@ public class MeasuredRate {
                 public void run() {
                     try {
                         // Zero out the current bucket.
+                        //每分钟这块调度一次，将当前的这个88次，设置到lastBucket中去，然后将currentBucket设置为0
                         lastBucket.set(currentBucket.getAndSet(0));
                     } catch (Throwable e) {
                         logger.error("Cannot reset the Measured Rate", e);
@@ -83,6 +84,7 @@ public class MeasuredRate {
      * Increments the count in the current sample interval.
      */
     public void increment() {
+        //来一次就加1，假设一分钟调了88次
         currentBucket.incrementAndGet();
     }
 }

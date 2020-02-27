@@ -106,7 +106,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
         this.recentCanceledQueue = new CircularQueue<Pair<Long, String>>(1000);
         this.recentRegisteredQueue = new CircularQueue<Pair<Long, String>>(1000);
 
-        this.renewsLastMin = new MeasuredRate(1000 * 60 * 1);
+        this.renewsLastMin = new MeasuredRate(1000 * 60 * 1); //todo:sampleInterval 1分钟
 
         this.deltaRetentionTimer.schedule(getDeltaRetentionTask(), //todo:构造的时候定时调度增量任务
                 serverConfig.getDeltaRetentionTimerIntervalInMs(),
@@ -368,6 +368,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
 
                 }
             }
+            //todo:每次心跳的时候都会加1，记录每一分钟实际的心跳次数
             renewsLastMin.increment();
             leaseToRenew.renew();
             return true;
@@ -1249,7 +1250,11 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
          * according to the configured cycle.
          */
         long getCompensationTimeMs() {
+            //下一次又过来了
+
+            //先获取当前时间
             long currNanos = getCurrentTimeNano();
+            //上一次这个EvictionTask被执行的时间,第一次肯定是0,将当前时间设置到AtomicLong中去
             long lastNanos = lastExecutionNanosRef.getAndSet(currNanos);
             if (lastNanos == 0l) {
                 return 0l;
